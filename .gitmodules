@@ -1,0 +1,12 @@
+[submodule "sources/twemoji"]
+	path = sources/twemoji
+	url = https://github.com/twitter/twemoji.git
+[submodule "sources/noto"]
+	path = sources/noto
+	url = https://github.com/googlefonts/noto-emoji.git
+[submodule "sources/openmoji"]
+	path = sources/openmoji
+	url = https://github.com/hfg-gmuend/openmoji.git
+[submodule "sources/blobmoji"]
+	path = sources/blobmoji
+	url = https://github.com/C1710/blobmoji.git

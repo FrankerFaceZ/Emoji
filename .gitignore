@@ -1,0 +1,6 @@
+node_modules
+images
+coverage
+tmp
+sources
+extra-shortcodes.json

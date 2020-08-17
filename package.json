@@ -1,0 +1,28 @@
+{
+	"name": "ffz-emoji",
+	"version": "1.0.0",
+	"private": true,
+	"scripts": {
+		"fixnoto": "node scripts/download_missing_noto.js",
+		"resizenoto": "node scripts/resize_noto.js",
+		"shortcodes": "node scripts/gather_shortcodes.js",
+		"datafile": "node scripts/build_data.js",
+		"copy": "node scripts/copy_images.js",
+		"sheets": "node scripts/build_sheets.js",
+		"optimize": "node scripts/optimize.js",
+		"data": "npm run fixnoto && npm run shortcodes && npm run datafile",
+		"images:basic": "npm run resizenoto && npm run copy && npm run sheets",
+		"images": "npm run images:basic && npm run optimize",
+		"build": "npm run data && npm run images"
+	},
+	"author": "SirStendec <sir@stendec.me>",
+	"license": "MIT",
+	"dependencies": {
+		"emoji-datasource": "^5.0.1",
+		"emojibase": "^4.1.1",
+		"emojibase-data": "^5.1.1",
+		"fastest-levenshtein": "^1.0.12",
+		"node-fetch": "^2.6.0",
+		"rimraf": "^3.0.2"
+	}
+}
