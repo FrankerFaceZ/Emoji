@@ -142,7 +142,7 @@ naming scheme. Populates missing Blob emoji images from the Noto image sources.
 
 Build sprite sheets for each of the emoji styles in 18x18, 36x36, and 72x72 sizes.
 
-### `npm run optiimze`
+### `npm run optimize`
 
 For each individual emoji PNG, as well as each sprite sheet, try to optimize
 the image using `pngcrush`, `optipng`, `pngout`, `advpng`, and `zopflipng`. The
