@@ -10,7 +10,7 @@ const github_shortcodes_data = require('emojibase-data/en/shortcodes/github.json
 const iamcal_shortcodes_data = require('emojibase-data/en/shortcodes/iamcal.json')
 
 
-/** @type {Map<string, string[]>} */
+/** @type {Map<string, Set<string>>} */
 const shortcodes_data = new Map
 
 const shortcodes_data_sources = [
@@ -24,11 +24,16 @@ for (const source of shortcodes_data_sources) {
 	for (const [emoji_hexcode, short_code_or_codes] of Object.entries(source)) {
 		let all_shortcodes= shortcodes_data.get(emoji_hexcode)
 		if (all_shortcodes == null) {
-			all_shortcodes = []
+			all_shortcodes = new Set
 			shortcodes_data.set(emoji_hexcode, all_shortcodes)
 		}
-		if (Array.isArray(short_code_or_codes)) all_shortcodes.push(...short_code_or_codes)
-		else all_shortcodes.push(short_code_or_codes)
+		if (!Array.isArray(short_code_or_codes)) {
+			all_shortcodes.add(short_code_or_codes)
+			continue
+		}
+
+		for (const short_code of short_code_or_codes)
+			all_shortcodes.add(short_code)
 	}
 }
 
@@ -38,7 +43,7 @@ for (const source of shortcodes_data_sources) {
  * @returns {string[]} shortcodes
  */
 function get_shortcodes(emoji_hexcode) {
-	return shortcodes_data.get(emoji_hexcode)
+	return Array.from(shortcodes_data.get(emoji_hexcode))
 }
 
 module.exports = { get_shortcodes }
