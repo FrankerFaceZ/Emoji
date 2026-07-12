@@ -68,8 +68,10 @@ function getImages(key) {
 		(has_openmoji ? 0b0001 : 0);
 }
 
+// First, sort the emoji by order
+data.sort((a, b) => a.order - b.order)
 
-// First, we need to count the variants + the base emoji
+// Then, we need to count the variants + the base emoji
 let count = 0;
 for(const emoji of data) {
 	count++;
