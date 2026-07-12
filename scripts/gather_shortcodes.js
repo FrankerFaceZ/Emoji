@@ -9,20 +9,34 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 
 let data = require('emojibase-data/en/data.json');
+/** @type {Record<string, string|string[]>} */
+let shortcodes_data = require('emojibase-data/en/shortcodes/emojibase.json')
+
+/**
+ * @param {string} emoji_hexcode
+ * @returns {string[]} shortcodes
+ */
+function get_shortcodes(emoji_hexcode) {
+	const code_or_codes = shortcodes_data[emoji_hexcode];
+	if (!Array.isArray(code_or_codes)) return [code_or_codes];
+	return code_or_codes
+}
 
 const GITHUB_MATCHER = /^https:\/\/github.githubassets.com\/images\/icons\/emoji\/unicode\/([0-9a-f_-]+)/;
 
 const existing_codes = new Set;
 const native_codes = {};
 for(const emoji of data) {
-	native_codes[emoji.hexcode] = emoji.shortcodes;
-	for(const code of emoji.shortcodes)
+	const shortcodes = get_shortcodes(emoji.hexcode)
+	native_codes[emoji.hexcode] = shortcodes;
+	for(const code of shortcodes)
 		existing_codes.add(code);
 
 	if ( emoji.skins ) {
 		for(const skin of emoji.skins) {
-			native_codes[skin.hexcode] = skin.shortcodes;
-			for(const code of skin.shortcodes)
+			const skin_shortcodes = get_shortcodes(skin.hexcode)
+			native_codes[skin.hexcode] = skin_shortcodes;
+			for(const code of skin_shortcodes)
 				existing_codes.add(code);
 		}
 	}
