@@ -7,13 +7,13 @@ sheets, and optimized images used by the official
 ## Getting Started
 
 1. Clone this repository.
-2. Initialize the git submodules in `sources/`
-3. `npm install`
+2. Initialize the git submodules in `sources/`: `git submodule update --init --recursive`
+3. `pnpm install`
 
 ### Updating
 
 ```
-npm install --save emojibase-data@latest emoji-datasource@latest
+pnpm install emojibase-data@latest emoji-datasource@latest
 ```
 
 ### Building Data
@@ -22,7 +22,7 @@ The following command runs all the scripts necessary to generate `emoji.json` an
 `emoji-compact.json`.
 
 ```
-npm run data
+pnpm run data
 ```
 
 ## Building the Images
@@ -105,7 +105,7 @@ The following command runs the commands to:
 4. Optimize all images.
 
 ```
-npm run images
+pnpm run images
 ```
 
 > **Note:** Optimizing images is a very slow operation. If you want to do everything
@@ -114,41 +114,41 @@ except optimization, please run the command: `npm run images:basic` instead.
 
 ## Available Commands
 
-### `npm run fixnoto`
+### `pnpm run fixnoto`
 
 Downloads Noto emoji that are missing from the Noto repository. Notably, this
 includes all national flag emoji.
 
-### `npm run resizenoto`
+### `pnpm run resizenoto`
 
 Resizes Noto and Blob emoji to `72x72`, as the repositories only include `128x128`.
 
-### `npm run shortcodes`
+### `pnpm run shortcodes`
 
 Download a list of short codes from the GitHub API and merge it with extra
 short codes from the `emoji-data` package.
 
-### `npm run datafile`
+### `pnpm run datafile`
 
 Build the main emoji data files. This checks for the existence of image files
 in each style and merges in short codes from the shortcodes command.
 
-### `npm run copy`
+### `pnpm run copy`
 
 Copy all image files into the `images/` subdirectory using the expected
 naming scheme. Populates missing Blob emoji images from the Noto image sources.
 
-### `npm run sheets`
+### `pnpm run sheets`
 
 Build sprite sheets for each of the emoji styles in 18x18, 36x36, and 72x72 sizes.
 
-### `npm run optimize`
+### `pnpm run optimize`
 
 For each individual emoji PNG, as well as each sprite sheet, try to optimize
 the image using `pngcrush`, `optipng`, `pngout`, `advpng`, and `zopflipng`. The
 smallest file will be taken. This script takes a long time to execute.
 
-> **Note:** The scripts related to image processing are based off of build
+> **Note:** The scripts related to image processing are based off build
 > scripts from the `emoji-data` library, without any extra dependency on PHP.
 
 
