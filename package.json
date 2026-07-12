@@ -5,12 +5,11 @@
 	"scripts": {
 		"fixnoto": "node scripts/download_missing_noto.js",
 		"resizenoto": "node scripts/resize_noto.js",
-		"shortcodes": "node scripts/gather_shortcodes.js",
 		"datafile": "node scripts/build_data.js",
 		"copy": "node scripts/copy_images.js",
 		"sheets": "node scripts/build_sheets.js",
 		"optimize": "node scripts/optimize.js",
-		"data": "pnpm run fixnoto && pnpm run shortcodes && pnpm run datafile",
+		"data": "pnpm run fixnoto && pnpm run datafile",
 		"images:basic": "pnpm run resizenoto && pnpm run copy && pnpm run sheets",
 		"images": "pnpm run images:basic && pnpm run optimize",
 		"build": "pnpm run data && pnpm run images"
