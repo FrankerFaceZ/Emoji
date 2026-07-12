@@ -14,9 +14,6 @@ const exists = util.promisify(fs.exists);
 const pipeline = util.promisify(require('stream').pipeline);
 
 let data = require('emojibase-data/en/data.json');
-const regional = require('./regional_indicators');
-
-data = data.concat(regional);
 
 const PNG_PATH = `sources/noto/png/128/`,
 	SVG_PATH = `sources/noto/svg/`;
