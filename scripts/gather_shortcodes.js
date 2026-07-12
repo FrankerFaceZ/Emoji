@@ -9,18 +9,7 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 
 let data = require('emojibase-data/en/data.json');
-/** @type {Record<string, string|string[]>} */
-let shortcodes_data = require('emojibase-data/en/shortcodes/emojibase.json')
-
-/**
- * @param {string} emoji_hexcode
- * @returns {string[]} shortcodes
- */
-function get_shortcodes(emoji_hexcode) {
-	const code_or_codes = shortcodes_data[emoji_hexcode];
-	if (!Array.isArray(code_or_codes)) return [code_or_codes];
-	return code_or_codes
-}
+const { get_shortcodes } = require("./shortcodes_util.js")
 
 const GITHUB_MATCHER = /^https:\/\/github.githubassets.com\/images\/icons\/emoji\/unicode\/([0-9a-f_-]+)/;
 
