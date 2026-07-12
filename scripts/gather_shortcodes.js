@@ -9,9 +9,6 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 
 let data = require('emojibase-data/en/data.json');
-const regional = require('./regional_indicators');
-
-data = data.concat(regional);
 
 const GITHUB_MATCHER = /^https:\/\/github.githubassets.com\/images\/icons\/emoji\/unicode\/([0-9a-f_-]+)/;
 
