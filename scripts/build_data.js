@@ -9,11 +9,14 @@ const fs = require('fs');
 const path = require('path');
 const {distance} = require('fastest-levenshtein');
 
+/** @type {import('emojibase').Emoji[]} */
 let data = require('emojibase-data/en/data.json');
 const categories = require('emojibase-data/meta/groups.json');
+const names = require('emojibase-data/meta/unicode-names.json')
 
 const patch_regional_indicators = require('./regional_indicators.js')
 patch_regional_indicators(data)
+const { get_shortcodes: get_emojibase_shortcodes } = require("./shortcodes_util.js")
 
 const NOTO_PATH = `sources/noto/png/128/`,
 	BLOB_PATH = `sources/blobmoji/png/128/`,
@@ -21,13 +24,13 @@ const NOTO_PATH = `sources/noto/png/128/`,
 	OPENMOJI_PATH = `sources/openmoji/color/72x72/`;
 
 
-let shortcodes;
+let add_shortcodes;
 try {
-	shortcodes = JSON.parse(fs.readFileSync('extra-shortcodes.json', {encoding: 'utf8'}));
+	add_shortcodes = JSON.parse(fs.readFileSync('extra-shortcodes.json', {encoding: 'utf8'}));
 } catch(err) {
 	console.log('Error loading extra shortcodes.');
 	console.error(err);
-	shortcodes = {};
+	add_shortcodes = {};
 }
 
 
@@ -108,17 +111,19 @@ for(const emoji of data) {
 		versions = [];
 		versions_compact = [];
 		for(const version of emoji.skins) {
+			let version_shortcodes = get_emojibase_shortcodes(version.hexcode)
+			const version_name = names[version.hexcode]
 			const pos = getPosition(),
-				extra = shortcodes[version.hexcode];
+				extra = add_shortcodes[version.hexcode];
 
 			if ( Array.isArray(extra) )
 				for(const code of extra)
-					if ( ! version.shortcodes.includes(code) )
-						version.shortcodes.push(code);
+					if ( ! version_shortcodes.includes(code) )
+						version_shortcodes.push(code);
 
-			if ( version.shortcodes.length > 1 && version.name ) {
-				const test = version.name.toLowerCase().replace(/ /g, '_');
-				version.shortcodes = version.shortcodes
+			if ( version_shortcodes.length > 1 && version_name ) {
+				const test = version_name.toLowerCase().replace(/ /g, '_');
+				version_shortcodes = version_shortcodes
 					.map(code => [distance(test, code), code])
 					.sort((a, b) => a[0] - b[0])
 					.map(x => x[1]);
@@ -129,7 +134,7 @@ for(const emoji of data) {
 				pos,
 				images: getImages(version.hexcode),
 				tone: version.tone,
-				codes: version.shortcodes,
+				codes: version_shortcodes,
 				type: version.type
 			});
 
@@ -139,29 +144,31 @@ for(const emoji of data) {
 				getImages(version.hexcode),
 				version.tone,
 				version.type,
-				version.shortcodes.length === 1 ? version.shortcodes[0] : version.shortcodes
+				version_shortcodes.length === 1 ? version_shortcodes[0] : version_shortcodes
 			]);
 		}
 	}
 
+	let emoji_shortcodes = get_emojibase_shortcodes(emoji.hexcode)
+	const emoji_name = names[emoji.hexcode]
 	const pos = getPosition(),
-		extra = shortcodes[emoji.hexcode];
+		extra = add_shortcodes[emoji.hexcode];
 
 	if ( Array.isArray(extra) )
 		for(const code of extra)
-			if ( ! emoji.shortcodes.includes(code) )
-			emoji.shortcodes.push(code);
+			if ( ! emoji_shortcodes.includes(code) )
+			emoji_shortcodes.push(code);
 
-	if ( emoji.shortcodes.length > 1 && emoji.name ) {
-		const test = emoji.name.toLowerCase().replace(/ /g, '_');
-		emoji.shortcodes = emoji.shortcodes
+	if ( emoji_shortcodes.length > 1 && emoji_name ) {
+		const test = emoji_name.toLowerCase().replace(/ /g, '_');
+		emoji_shortcodes = emoji_shortcodes
 			.map(code => [distance(test, code), code])
 			.sort((a, b) => a[0] - b[0])
 			.map(x => x[1]);
 	}
 
-	const name_test = emoji.shortcodes[0].toUpperCase().replace(/_/g, ' '),
-		name = emoji.name !== name_test && emoji.name;
+	const name_test = emoji_shortcodes[0].toUpperCase().replace(/_/g, ' '),
+		name = emoji_name !== name_test && emoji_name;
 
 	const key = emoji.hexcode.toLowerCase();
 
@@ -169,8 +176,8 @@ for(const emoji of data) {
 		key,
 		group: emoji.group,
 		order: emoji.order,
-		name: emoji.name,
-		codes: emoji.shortcodes,
+		name: emoji_name,
+		codes: emoji_shortcodes,
 		type: emoji.type,
 		pos,
 		images: getImages(emoji.hexcode),
@@ -180,7 +187,7 @@ for(const emoji of data) {
 	out_compact.push([
 		emoji.group,
 		emoji.order,
-		emoji.shortcodes.length === 1 ? emoji.shortcodes[0] : emoji.shortcodes,
+		emoji_shortcodes.length === 1 ? emoji_shortcodes[0] : emoji_shortcodes,
 		name || 0,
 		key,
 		pos,
