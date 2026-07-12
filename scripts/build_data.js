@@ -24,16 +24,6 @@ const NOTO_PATH = `sources/noto/png/128/`,
 	OPENMOJI_PATH = `sources/openmoji/color/72x72/`;
 
 
-let add_shortcodes;
-try {
-	add_shortcodes = JSON.parse(fs.readFileSync('extra-shortcodes.json', {encoding: 'utf8'}));
-} catch(err) {
-	console.log('Error loading extra shortcodes.');
-	console.error(err);
-	add_shortcodes = {};
-}
-
-
 let notos = 0, blobs = 0, twemojis = 0, openmojis = 0;
 
 function getImages(key) {
@@ -115,13 +105,7 @@ for(const emoji of data) {
 		for(const version of emoji.skins) {
 			let version_shortcodes = get_emojibase_shortcodes(version.hexcode)
 			const version_name = names[version.hexcode]
-			const pos = getPosition(),
-				extra = add_shortcodes[version.hexcode];
-
-			if ( Array.isArray(extra) )
-				for(const code of extra)
-					if ( ! version_shortcodes.includes(code) )
-						version_shortcodes.push(code);
+			const pos = getPosition()
 
 			if ( version_shortcodes.length > 1 && version_name ) {
 				const test = version_name.toLowerCase().replace(/ /g, '_');
@@ -153,13 +137,7 @@ for(const emoji of data) {
 
 	let emoji_shortcodes = get_emojibase_shortcodes(emoji.hexcode)
 	const emoji_name = names[emoji.hexcode]
-	const pos = getPosition(),
-		extra = add_shortcodes[emoji.hexcode];
-
-	if ( Array.isArray(extra) )
-		for(const code of extra)
-			if ( ! emoji_shortcodes.includes(code) )
-			emoji_shortcodes.push(code);
+	const pos = getPosition()
 
 	if ( emoji_shortcodes.length > 1 && emoji_name ) {
 		const test = emoji_name.toLowerCase().replace(/ /g, '_');
