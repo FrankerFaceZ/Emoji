@@ -10,10 +10,10 @@ const path = require('path');
 const {distance} = require('fastest-levenshtein');
 
 let data = require('emojibase-data/en/data.json');
-const regional = require('./regional_indicators'),
-	categories = require('emojibase-data/meta/groups.json');
+const categories = require('emojibase-data/meta/groups.json');
 
-data = data.concat(regional);
+const patch_regional_indicators = require('./regional_indicators.js')
+patch_regional_indicators(data)
 
 const NOTO_PATH = `sources/noto/png/128/`,
 	BLOB_PATH = `sources/blobmoji/png/128/`,
