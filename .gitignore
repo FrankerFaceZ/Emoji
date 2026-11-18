@@ -1,6 +1,5 @@
 node_modules
-images
+.cache
+dist
 coverage
 tmp
-sources
-extra-shortcodes.json

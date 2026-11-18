@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Bumped by the upstream workflow, together with the rebuilt data.
+      - dependency-name: emojibase
+      - dependency-name: emojibase-data
+    groups:
+      tooling:
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
