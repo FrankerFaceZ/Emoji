@@ -1,0 +1,122 @@
+name: Upstream updates
+
+# Once a day, look for new releases of emojibase-data, Twemoji, Noto, and
+# OpenMoji. If there are any, rebuild with them, run every safety check, and
+# open (or update) a pull request with the report. Nothing ships without a
+# human merging that pull request.
+#
+# Needs "Allow GitHub Actions to create and approve pull requests" enabled in
+# the repository's Actions settings. Pull requests opened with GITHUB_TOKEN
+# don't trigger ci.yml, which is why this job runs the full build and checks
+# itself and puts the results in the pull request.
+
+on:
+  schedule:
+    - cron: '23 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-updates
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BRANCH: automation/upstream-updates
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check for upstream releases
+        id: updates
+        run: pnpm sources:check --write --summary dist/updates.md
+
+      - name: Update lockfile
+        if: steps.updates.outputs.changed == 'true'
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Cache upstream sources
+        if: steps.updates.outputs.changed == 'true'
+        uses: actions/cache@v6
+        with:
+          path: .cache
+          key: emoji-sources-${{ hashFiles('sources.json', 'pnpm-lock.yaml', 'src/tools.ts') }}
+          restore-keys: emoji-sources-
+
+      - name: Build
+        id: build
+        if: steps.updates.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          pnpm tools
+          pnpm sources
+          pnpm data
+          pnpm images
+
+      - name: Safety checks
+        id: check
+        if: steps.updates.outputs.changed == 'true'
+        continue-on-error: true
+        run: pnpm check --baseline HEAD
+
+      - name: Open or update the pull request
+        if: steps.updates.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C "$BRANCH"
+          git add sources.json package.json pnpm-lock.yaml shipped.json
+          git commit -m 'Update emoji sources'
+          git push --force origin "$BRANCH"
+
+          {
+            cat dist/updates.md
+            echo
+            if [ '${{ steps.build.outcome }}' != 'success' ]; then
+              echo '> [!CAUTION]'
+              echo '> The build failed, so the data files were not regenerated. See the workflow log.'
+              echo
+            fi
+            if [ -f dist/report.md ]; then cat dist/report.md; fi
+            echo
+            echo "Preview images of new and changed emoji are attached to [the workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+          } | head -c 60000 > dist/pr-body.md
+
+          if gh pr view "$BRANCH" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit "$BRANCH" --body-file dist/pr-body.md
+          else
+            gh pr create --base master --head "$BRANCH" --title 'Update emoji sources' --body-file dist/pr-body.md
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: steps.updates.outputs.changed == 'true'
+        with:
+          name: emoji-report
+          path: |
+            dist/updates.md
+            dist/report.md
+            dist/preview/
+          if-no-files-found: ignore
+
+      # Fail the run (which emails the maintainers) when something needs a human.
+      - name: Needs attention
+        if: steps.updates.outputs.problems == 'true' || steps.build.outcome == 'failure' || steps.check.outcome == 'failure'
+        run: |
+          [ -f dist/updates.md ] && cat dist/updates.md
+          echo '::error::Upstream changed in a way the build or the checks did not accept. See the pull request or the log.'
+          exit 1

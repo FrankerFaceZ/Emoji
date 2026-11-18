@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      - name: Cache upstream sources
+        uses: actions/cache@v6
+        with:
+          path: .cache
+          key: emoji-sources-${{ hashFiles('sources.json', 'pnpm-lock.yaml', 'src/tools.ts') }}
+          restore-keys: emoji-sources-
+
+      - run: pnpm tools
+      - run: pnpm sources
+
+      # Rebuilding must reproduce the committed shipped.json exactly. Catches hand
+      # edits and pull requests that bump a source without regenerating it.
+      - run: pnpm data
+      - name: shipped.json matches the build
+        run: |
+          if [ -n "$(git status --porcelain -- shipped.json)" ]; then
+            git diff --stat -- shipped.json
+            echo "::error::shipped.json is out of date. Run 'pnpm data' and commit shipped.json."
+            exit 1
+          fi
+
+      - run: pnpm images
+
+      - name: Safety checks
+        run: pnpm check --baseline "${{ github.event.pull_request.base.sha || github.event.before }}"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: emoji-report
+          path: |
+            dist/report.md
+            dist/preview/
+            dist/build.json
+            dist/v3.3.json
+            dist/emoji.json
+          if-no-files-found: ignore

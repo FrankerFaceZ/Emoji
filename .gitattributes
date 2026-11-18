@@ -1,0 +1,6 @@
+# Generated files must be byte-identical across platforms (CI rebuilds and diffs them).
+*.json text eol=lf
+*.ts text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+pnpm-lock.yaml text eol=lf

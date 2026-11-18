@@ -1,28 +1,36 @@
 {
 	"name": "ffz-emoji",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"private": true,
-	"scripts": {
-		"fixnoto": "node scripts/download_missing_noto.js",
-		"resizenoto": "node scripts/resize_noto.js",
-		"shortcodes": "node scripts/gather_shortcodes.js",
-		"datafile": "node scripts/build_data.js",
-		"copy": "node scripts/copy_images.js",
-		"sheets": "node scripts/build_sheets.js",
-		"optimize": "node scripts/optimize.js",
-		"data": "npm run fixnoto && npm run shortcodes && npm run datafile",
-		"images:basic": "npm run resizenoto && npm run copy && npm run sheets",
-		"images": "npm run images:basic && npm run optimize",
-		"build": "npm run data && npm run images"
-	},
+	"type": "module",
+	"description": "Builds the emoji data, images, and sprite sheets used by the FrankerFaceZ client.",
 	"author": "SirStendec <sir@stendec.me>",
 	"license": "MIT",
+	"packageManager": "pnpm@10.34.9",
+	"engines": {
+		"node": ">=24"
+	},
+	"scripts": {
+		"tools": "node src/cli/install-tools.ts",
+		"sources": "node src/cli/fetch-sources.ts",
+		"sources:check": "node src/cli/check-updates.ts",
+		"data": "node src/cli/build-data.ts",
+		"images": "node src/cli/build-images.ts",
+		"check": "node src/cli/check.ts",
+		"build": "pnpm sources && pnpm data && pnpm images && pnpm check",
+		"typecheck": "tsc",
+		"test": "node --test \"test/**/*.test.ts\""
+	},
 	"dependencies": {
-		"emoji-datasource": "^5.0.1",
-		"emojibase": "^4.1.1",
-		"emojibase-data": "^5.1.1",
-		"fastest-levenshtein": "^1.0.12",
-		"node-fetch": "^2.6.0",
-		"rimraf": "^3.0.2"
+		"@sinclair/typebox": "^0.34.52",
+		"emojibase": "18.0.0",
+		"emojibase-data": "18.0.0",
+		"fastest-levenshtein": "^1.0.16",
+		"fflate": "^0.8.3",
+		"sharp": "^0.35.5"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.6",
+		"typescript": "^7.0.2"
 	}
 }
