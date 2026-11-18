@@ -1,21 +1,44 @@
 name: CI
 
+# Three step process for deploying new builds:
+#
+#   build    run on PRs and pushes to master. Builds the data and runs checks.
+#   release  run manually or via push to master: Publish the build's package
+#            as a GitHub release named after the data's hash (build-<first 12 hex of sha256(v3.3.json)>).
+#   deploy   run if a release is made: Upload the new release to the FFZ
+#            server and start serving it to clients.
+#
+# Only `build` installs packages or runs repository code, and it has a
+# read-only token. `release` has write access but runs nothing from the repo,
+# and the deploy key exists only in `deploy`, which just downloads the package
+# and pipes it to ffz-ci. Secrets: FFZ_DEPLOY_HOST, FFZ_DEPLOY_KEY,
+# FFZ_DEPLOY_KNOWN_HOSTS.
+
 on:
   pull_request:
   push:
     branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push replaces a pull request's run. Master runs always finish:
+  # they may be releasing or deploying.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Releases and deploys only ever come from master.
+  PUBLISH: ${{ github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
 
 jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.package.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -54,8 +77,10 @@ jobs:
 
       - run: pnpm images
 
+      # Pull requests compare with their base, pushes with the previous master,
+      # and runs started by hand with the commit before.
       - name: Safety checks
-        run: pnpm check --baseline "${{ github.event.pull_request.base.sha || github.event.before }}"
+        run: pnpm check --baseline "${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}"
 
       - uses: actions/upload-artifact@v7
         if: always()
@@ -68,3 +93,96 @@ jobs:
             dist/v3.3.json
             dist/emoji.json
           if-no-files-found: ignore
+
+      - name: Package
+        id: package
+        if: env.PUBLISH == 'true'
+        run: |
+          version=$(sha256sum dist/v3.3.json | cut -c1-12)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          mkdir package
+          tar -C dist -czf "package/emoji-$version.tar.gz" v3.3.json build.json images
+          cp dist/v3.3.json dist/emoji.json dist/manifest.json dist/report.md package/
+          (cd package && sha256sum "emoji-$version.tar.gz" v3.3.json emoji.json manifest.json > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v7
+        if: env.PUBLISH == 'true'
+        with:
+          name: emoji-package
+          path: package/
+          compression-level: 0    # the tarball is already gzipped
+          retention-days: 7
+
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      created: ${{ steps.release.outputs.created }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: emoji-package
+          path: package
+
+      # Made as a draft, filled, then published: an interrupted run can't leave
+      # a published release with missing files that later runs would skip.
+      - name: Create release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          tag="build-$VERSION"
+          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
+          if [ "$draft" = false ]; then
+            echo "Release $tag already exists: the data hasn't changed."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$draft" = true ]; then
+            echo "Removing the unfinished draft of $tag from an earlier run."
+            gh release delete "$tag" --yes
+          fi
+          cd package
+          gh release create "$tag" --draft \
+            --target "${{ github.sha }}" \
+            --title "Emoji build $VERSION" \
+            --notes-file report.md \
+            "emoji-$VERSION.tar.gz" v3.3.json emoji.json manifest.json SHA256SUMS
+          gh release edit "$tag" --draft=false --latest
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  deploy-new-server:
+    needs: [build, release]
+    if: needs.release.outputs.created == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-new-server
+      cancel-in-progress: false
+    permissions: {}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: emoji-package
+          path: package
+
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.FFZ_DEPLOY_HOST }}
+          DEPLOY_KEY: ${{ secrets.FFZ_DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.FFZ_DEPLOY_KNOWN_HOSTS }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/ffz_deploy
+          chmod 600 ~/.ssh/ffz_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/ffz_deploy -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "githubci@$DEPLOY_HOST" deploy emoji < "package/emoji-$VERSION.tar.gz"

@@ -100,8 +100,8 @@ and 18, and each cell is the size plus 1px of padding on every side.
 
 ## Deploying
 
-The [release workflow](.github/workflows/release.yml) deploys to the new
-server the same way the client, add-ons, and locale builds do.
+The [CI workflow](.github/workflows/ci.yml) releases and deploys master builds
+to the new server the same way the client, add-ons, and locale builds do.
 
 ## Compact Data Format
 
