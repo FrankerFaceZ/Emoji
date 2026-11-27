@@ -3696,7 +3696,7 @@
 	"1fae8": {"codes":["shaking_face","shaking"],"group":0,"images":31,"type":1},
 	"1fae9": {"codes":["face_with_bags_under_eyes","face_with_eye_bags"],"group":0,"images":31,"type":1},
 	"1faea": {"codes":["distorted_face"],"group":0,"images":31,"type":1},
-	"1faeb": {"codes":["cracking_face"],"group":0,"images":24,"type":1},
+	"1faeb": {"codes":["cracking_face"],"group":0,"images":28,"type":1},
 	"1faef": {"codes":["fight_cloud"],"group":0,"images":27,"type":1},
 	"1faf0": {"codes":["hand_with_index_finger_and_thumb_crossed"],"group":1,"images":31,"type":1},
 	"1faf0-1f3fb": {"codes":["hand_with_index_finger_and_thumb_crossed_tone1"],"group":1,"images":31,"type":1},

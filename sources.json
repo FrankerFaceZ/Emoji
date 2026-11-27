@@ -33,8 +33,8 @@
 	"blobmoji": {
 		"kind": "git",
 		"repo": "DavidBerdik/blobmoji2",
-		"ref": "blobmoji-17r1",
-		"commit": "3a1be353fde25aee4743a80f94d6702dc7dd97da",
+		"ref": "blobmoji-18r1",
+		"commit": "703ec06ca0d7d35c8e0ff7645b7c8bf4f5c24944",
 		"paths": [
 			"svg"
 		]
